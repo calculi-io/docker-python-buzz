@@ -1,0 +1,623 @@
+{
+	"metadata": {
+		"version": 1
+	},
+	"application": {
+		"name": "python-buzz",
+		"language": "PYTHON",
+		"artifact_store": {
+			"type": "s3",
+			"repositories": [
+				{
+					"category": "rc-packaging",
+					"bucket": "guide-rails-calculi-rc"
+				},
+				{
+					"category": "final-packaging",
+					"bucket": "guide-rails-calculi-final"
+				},
+				{
+					"category": "logs",
+					"bucket": "guide-rails-calculi-logs"
+				}
+			]
+		}
+	},
+	"pipeline": {
+		"segments": [
+			{
+				"name": "Build",
+				"segment_type": "build",
+				"job_steps": [
+					{
+						"name": "Print env",
+						"definition": "Print env",
+						"command": "env | sort",
+						"properties": null
+					},
+					{
+						"name": "Install dependencies",
+						"definition": "Install dependencies",
+						"command": "pip install --upgrade pip\npip install -r requirements.txt\n",
+						"properties": null
+					},
+					{
+						"name": "Run unit tests and generate reports",
+						"definition": "Run unit tests and generate reports",
+						"command": "echo \"unit testing\"\npython -m pytest -v --junit-xml test.xml  --cov=buzz --cov-report term --cov-report xml:coverage.xml tests/\nls",
+						"properties": null
+					}
+				],
+				"publish_attributes": {
+					"publish": true,
+					"docker_attributes": {
+						"repository": "((application.name))",
+						"tags": [
+							"((application.version))",
+							"latest"
+						],
+						"path": "",
+						"build_args": {
+							"foo": "bar"
+						}
+					}
+				},
+				"exit_actions": {
+					"default": {
+						"code_analysis": {
+							"publish": false,
+							"properties": null
+						}
+					},
+					"on_success": {
+						"code_analysis": null
+					},
+					"on_failure": {
+						"code_analysis": null
+					},
+					"on_abort": {
+						"code_analysis": null
+					}
+				},
+				"notification_configurations": [
+					{
+						"notification_type": "email",
+						"tool_alias": "CalculiEmail",
+						"protected": false,
+						"properties": [],
+						"notification_actions": {
+							"default": {
+								"send_notification": true,
+								"to": [
+									"pinaki.sarkar@calculi.com,vincent.wong@calculi.com"
+								],
+								"message": "A default message"
+							},
+							"on_success": {
+								"send_notification": true,
+								"to": [
+									"pinaki.sarkar@calculi.com,vincent.wong@calculi.com"
+								],
+								"message": "A sucess message"
+							},
+							"on_failure": {
+								"send_notification": true,
+								"to": [
+									"pinaki.sarkar@calculi.com,vincent.wong@calculi.com"
+								],
+								"message": "A fail message"
+							},
+							"on_abort": {
+								"send_notification": true,
+								"to": [
+									"pinaki.sarkar@calculi.com,vincent.wong@calculi.com"
+								],
+								"message": "A abort message"
+							}
+						}
+					}
+				],
+				"deployment_strategy": {},
+				"application_init": {
+					"command": "",
+					"arguments": null
+				},
+				"packages": [
+					{
+						"name": "buzz",
+						"dependencies": [],
+						"downloads": [],
+						"files": [
+							"*"
+						],
+						"package_install_command": "",
+						"installed_path": ""
+					}
+				],
+				"instance_tags": [
+					{
+						"name": "application.name",
+						"value": "((application.name))"
+					}
+				],
+				"post_deployment_actions": {
+					"instances": null,
+					"loadbalanced": false,
+					"loadbalancer": {
+						"TargetGroupName": "",
+						"TargetGroupPort": 0,
+						"TargetGroupProtocol": "",
+						"TargetType": "",
+						"VPCID": "",
+						"HealthCheckEnabled": false,
+						"HealthCheckPort": "",
+						"UnhealthyThresholdCount": 0
+					}
+				},
+				"docker_options": {}
+			},
+			{
+				"name": "Integration",
+				"segment_type": "integration",
+				"run_after": [
+					"Build"
+				],
+				"job_steps": [
+					{
+						"name": "Deploy \u0026 test application",
+						"definition": "Deploy \u0026 test application",
+						"command": "env\n\n\npushd ${PKG_BASE_DIR}/buzz\npip install --upgrade pip\npip install -r requirements.txt\n\npython webapp.py \u0026\necho $! \u003e application.pid\n\nsleep 5\nhttp_code=$(curl -s -o /dev/null -I -w \"%{http_code}\" http://localhost:5000/)\nif [ $http_code -eq 200 ]; then\n    echo \"Application started successfully\" \n    pkill -F application.pid\nelse \n    pkill -F application.pid\n    exit 1\nfi",
+						"properties": null
+					}
+				],
+				"exit_actions": {
+					"default": {
+						"fetch_logs": true,
+						"notifications": [
+							{
+								"type": "slack",
+								"send_notification": false,
+								"to": null,
+								"message": ""
+							}
+						],
+						"code_analysis": {
+							"publish": false,
+							"properties": null
+						},
+						"delete_instances": true
+					},
+					"on_success": {
+						"notifications": [
+							{
+								"type": "slack",
+								"send_notification": false,
+								"to": null,
+								"message": ""
+							}
+						],
+						"code_analysis": {
+							"publish": false,
+							"properties": null
+						}
+					},
+					"on_failure": {
+						"notifications": [
+							{
+								"type": "slack",
+								"send_notification": false,
+								"to": null,
+								"message": ""
+							}
+						],
+						"code_analysis": {
+							"publish": false,
+							"properties": null
+						}
+					},
+					"on_abort": {
+						"notifications": [
+							{
+								"type": "slack",
+								"send_notification": false,
+								"to": null,
+								"message": ""
+							}
+						],
+						"code_analysis": {
+							"publish": false,
+							"properties": null
+						}
+					}
+				},
+				"properties": [
+					{
+						"name": "transporter.username",
+						"value": "((transporter.username))"
+					},
+					{
+						"name": "transporter.password",
+						"value": "((transporter.password))"
+					}
+				],
+				"deployment_strategy": {
+					"canaries": 1,
+					"max_in_flight": 1,
+					"canary_watch_time": "5000-30000",
+					"update_watch_time": "5000-30000",
+					"serial": false
+				},
+				"application_init": {
+					"command": "",
+					"arguments": null
+				},
+				"process": {
+					"init": {
+						"command": ""
+					}
+				},
+				"package_dependencies": [
+					"buzz"
+				],
+				"instance_tags": [
+					{
+						"name": "application.name",
+						"value": "((application.name))"
+					}
+				],
+				"post_deployment_actions": {
+					"instances": null,
+					"loadbalanced": false,
+					"loadbalancer": {
+						"TargetGroupName": "",
+						"TargetGroupPort": 0,
+						"TargetGroupProtocol": "",
+						"TargetType": "",
+						"VPCID": "",
+						"HealthCheckEnabled": false,
+						"HealthCheckPort": "",
+						"UnhealthyThresholdCount": 0
+					}
+				},
+				"docker_options": {
+					"repository": "pipeline-image-python-tools:latest"
+				}
+			},
+			{
+				"name": "Production",
+				"segment_type": "production",
+				"persistent": true,
+				"run_after": [
+					"Integration"
+				],
+				"job_steps": [
+					{
+						"name": "Deploy and smoke test",
+						"definition": "Deploy and smoke test",
+						"command": "pushd ${PKG_BASE_DIR}/buzz\npip install --upgrade pip\npip install -r requirements.txt\n\npython webapp.py \u0026\necho $! \u003e application.pid\n\nsleep 5\nhttp_code=$(curl -s -o /dev/null -I -w \"%{http_code}\" http://localhost:5000/)\nif [ $http_code -eq 200 ]; then\n    echo \"Application started successfully\" \n    pkill -F application.pid\nelse \n    pkill -F application.pid\n    exit 1\nfi",
+						"properties": null
+					}
+				],
+				"exit_actions": {
+					"default": {
+						"fetch_logs": true,
+						"notifications": [
+							{
+								"type": "slack",
+								"send_notification": false,
+								"to": null,
+								"message": ""
+							}
+						],
+						"code_analysis": {
+							"publish": false,
+							"properties": null
+						},
+						"delete_instances": false
+					},
+					"on_success": {
+						"notifications": [
+							{
+								"type": "slack",
+								"send_notification": false,
+								"to": null,
+								"message": ""
+							}
+						],
+						"code_analysis": {
+							"publish": false,
+							"properties": null
+						},
+						"delete_instances": false
+					},
+					"on_failure": {
+						"notifications": [
+							{
+								"type": "slack",
+								"send_notification": false,
+								"to": null,
+								"message": ""
+							}
+						],
+						"code_analysis": {
+							"publish": false,
+							"properties": null
+						},
+						"delete_instances": false
+					},
+					"on_abort": {
+						"notifications": [
+							{
+								"type": "slack",
+								"send_notification": false,
+								"to": null,
+								"message": ""
+							}
+						],
+						"code_analysis": {
+							"publish": false,
+							"properties": null
+						},
+						"delete_instances": false
+					}
+				},
+				"deployment_strategy": {
+					"canaries": 1,
+					"max_in_flight": 1,
+					"canary_watch_time": "5000-30000",
+					"update_watch_time": "5000-30000",
+					"serial": false
+				},
+				"application_init": {
+					"command": "",
+					"arguments": null
+				},
+				"process": {
+					"init": {
+						"command": ""
+					}
+				},
+				"package_dependencies": [
+					"buzz"
+				],
+				"instance_tags": [
+					{
+						"name": "application.name",
+						"value": "((application.name))"
+					}
+				],
+				"gated": true,
+				"post_deployment_actions": {
+					"instances": null,
+					"loadbalanced": false,
+					"loadbalancer": {
+						"TargetGroupName": "",
+						"TargetGroupPort": 0,
+						"TargetGroupProtocol": "",
+						"TargetType": "",
+						"VPCID": "",
+						"HealthCheckEnabled": false,
+						"HealthCheckPort": "",
+						"UnhealthyThresholdCount": 0
+					}
+				}
+			}
+		],
+		"exit_actions": {
+			"default": {
+				"fetch_logs": true,
+				"notifications": [
+					{
+						"type": "slack",
+						"send_notification": false,
+						"to": null,
+						"message": ""
+					}
+				],
+				"code_analysis": {
+					"publish": true,
+					"properties": null
+				},
+				"delete_instances": true
+			},
+			"on_success": {
+				"notifications": [
+					{
+						"type": "slack",
+						"send_notification": false,
+						"to": null,
+						"message": ""
+					}
+				],
+				"code_analysis": null
+			},
+			"on_failure": {
+				"notifications": [
+					{
+						"type": "slack",
+						"send_notification": false,
+						"to": null,
+						"message": ""
+					}
+				],
+				"code_analysis": null
+			},
+			"on_abort": {
+				"notifications": [
+					{
+						"type": "slack",
+						"send_notification": false,
+						"to": null,
+						"message": ""
+					}
+				],
+				"code_analysis": null
+			}
+		},
+		"default_properties": [
+			{
+				"name": "gr.dockerregistry.repo_url",
+				"value": "docker.calculi.io",
+				"type": "string"
+			}
+		],
+		"deployment_files": [],
+		"application_init": {
+			"command": "",
+			"arguments": null
+		},
+		"process": {
+			"init": {
+				"command": ""
+			}
+		},
+		"releases": []
+	},
+	"organization": {
+		"orgname": "Tutorial"
+	},
+	"infrastructure": {
+		"stemcells": null,
+		"resources": [
+			{
+				"name": "pipeline",
+				"image": {
+					"name": "docker-registry.service.consul:443/pipeline-image-cli-4686-test",
+					"version": "latest",
+					"location": "docker-registry.service.consul:443"
+				}
+			},
+			{
+				"name": "email",
+				"image": {
+					"name": "docker-registry.service.consul:443/gr-email-resource",
+					"version": "latest",
+					"location": "docker-registry.service.consul:443"
+				}
+			},
+			{
+				"name": "deployment",
+				"image": {
+					"name": "docker-registry.service.consul:443/pipeline-image-cli-4686-test",
+					"version": "latest",
+					"location": "docker-registry.service.consul:443"
+				}
+			},
+			{
+				"name": "idgenerator",
+				"image": {
+					"name": "docker-registry.service.consul:443/gr-id-generator",
+					"version": "latest",
+					"location": "docker-registry.service.consul:443"
+				}
+			},
+			{
+				"name": "emitter",
+				"image": {
+					"name": "docker-registry.service.consul:443/guide-rails-emitter",
+					"version": "latest",
+					"location": "docker-registry.service.consul:443"
+				}
+			},
+			{
+				"name": "git-resource",
+				"image": {
+					"name": "docker-registry.service.consul:443/gr-git-resource",
+					"version": "latest",
+					"location": "docker-registry.service.consul:443"
+				}
+			},
+			{
+				"name": "build-breaker",
+				"image": {
+					"name": "docker-registry.service.consul:443/gr-build-breaker",
+					"version": "latest",
+					"location": "docker-registry.service.consul:443"
+				}
+			},
+			{
+				"name": "s3",
+				"image": {
+					"name": "docker-registry.service.consul:443/concourse-s3-resource",
+					"version": "latest",
+					"location": "docker-registry.service.consul:443"
+				}
+			},
+			{
+				"name": "slack",
+				"image": {
+					"name": "docker-registry.service.consul:443/concourse-slack-resource",
+					"version": "latest",
+					"location": "docker-registry.service.consul:443"
+				}
+			},
+			{
+				"name": "sonar",
+				"image": {
+					"name": "docker-registry.service.consul:443/concourse-sonarqube-resource",
+					"version": "latest",
+					"location": "docker-registry.service.consul:443"
+				}
+			},
+			{
+				"name": "time",
+				"image": {
+					"name": "docker-registry.service.consul:443/gr-time-resource",
+					"version": "latest",
+					"location": "docker-registry.service.consul:443"
+				}
+			},
+			{
+				"name": "azure-blobstore",
+				"image": {
+					"name": "docker-registry.service.consul:443/concourse-azure-blobstore-resource",
+					"version": "latest",
+					"location": "docker-registry.service.consul:443"
+				}
+			},
+			{
+				"name": "gr-gcs-resource",
+				"image": {
+					"name": "docker-registry.service.consul:443/gr-gcs-resource",
+					"version": "latest",
+					"location": "docker-registry.service.consul:443"
+				}
+			},
+			{
+				"name": "build",
+				"image": {
+					"name": "docker-registry.service.consul:443/pipeline-image-python-tools",
+					"version": "latest",
+					"location": "docker-registry.service.consul:443"
+				}
+			},
+			{
+				"name": "docker-resource",
+				"image": {
+					"name": "docker-registry.service.consul:443/gr-docker-image",
+					"version": "latest",
+					"location": "docker-registry.service.consul:443"
+				}
+			}
+		],
+		"notification_configurations": null,
+		"vault": {
+			"address": ""
+		},
+		"concourse": {
+			"address": "",
+			"team": "",
+			"username": "",
+			"password": "",
+			"fly_target_path": ""
+		},
+		"mq": {
+			"host": "",
+			"user": "",
+			"password": ""
+		},
+		"bosh": {
+			"director": ""
+		}
+	}
+}
