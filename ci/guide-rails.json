@@ -31,12 +31,15 @@
 				"publish_attributes": {
 					"publish": true,
 					"docker_attributes": {
+						"docker_registry_alias_id": "f5aeaf85-5985-472c-43d3-6752af7385a4",
 						"repository": "((application.name))",
 						"tags": [
 							"((application.version))",
 							"latest"
 						],
 						"path": "",
+						"context": "",
+						"docker_file_path": "",
 						"build_args": {
 							"foo": "bar"
 						}
@@ -72,22 +75,12 @@
 				"instance_tags": [
 					{
 						"name": "application.name",
-						"value": "((application.name))"
+						"value": "((application.name))",
+						"when": "0001-01-01T00:00:00Z"
 					}
 				],
 				"post_deployment_actions": {
-					"instances": null,
-					"loadbalanced": false,
-					"loadbalancer": {
-						"TargetGroupName": "",
-						"TargetGroupPort": 0,
-						"TargetGroupProtocol": "",
-						"TargetType": "",
-						"VPCID": "",
-						"HealthCheckEnabled": false,
-						"HealthCheckPort": "",
-						"UnhealthyThresholdCount": 0
-					}
+					"loadbalancer": {}
 				},
 				"docker_options": {},
 				"tasks": [
@@ -142,11 +135,13 @@
 				"properties": [
 					{
 						"name": "transporter.username",
-						"value": "((transporter.username))"
+						"value": "((transporter.username))",
+						"when": "0001-01-01T00:00:00Z"
 					},
 					{
 						"name": "transporter.password",
-						"value": "((transporter.password))"
+						"value": "((transporter.password))",
+						"when": "0001-01-01T00:00:00Z"
 					}
 				],
 				"deployment_strategy": {
@@ -166,24 +161,15 @@
 				"instance_tags": [
 					{
 						"name": "application.name",
-						"value": "((application.name))"
+						"value": "((application.name))",
+						"when": "0001-01-01T00:00:00Z"
 					}
 				],
 				"post_deployment_actions": {
-					"instances": null,
-					"loadbalanced": false,
-					"loadbalancer": {
-						"TargetGroupName": "",
-						"TargetGroupPort": 0,
-						"TargetGroupProtocol": "",
-						"TargetType": "",
-						"VPCID": "",
-						"HealthCheckEnabled": false,
-						"HealthCheckPort": "",
-						"UnhealthyThresholdCount": 0
-					}
+					"loadbalancer": {}
 				},
 				"docker_options": {
+					"docker_registry_alias_id": "f5aeaf85-5985-472c-43d3-6752af7385a4",
 					"repository": "pipeline-image-python-tools:latest"
 				},
 				"deployment_target": 1
@@ -229,23 +215,17 @@
 				"instance_tags": [
 					{
 						"name": "application.name",
-						"value": "((application.name))"
+						"value": "((application.name))",
+						"when": "0001-01-01T00:00:00Z"
 					}
 				],
 				"gated": true,
 				"post_deployment_actions": {
-					"instances": null,
-					"loadbalanced": false,
-					"loadbalancer": {
-						"TargetGroupName": "",
-						"TargetGroupPort": 0,
-						"TargetGroupProtocol": "",
-						"TargetType": "",
-						"VPCID": "",
-						"HealthCheckEnabled": false,
-						"HealthCheckPort": "",
-						"UnhealthyThresholdCount": 0
-					}
+					"loadbalancer": {}
+				},
+				"docker_options": {
+					"docker_registry_alias_id": "f5aeaf85-5985-472c-43d3-6752af7385a4",
+					"repository": "pipeline-image-python-tools:latest"
 				}
 			}
 		],
@@ -259,19 +239,12 @@
 				"delete_instances": true
 			}
 		},
-		"default_properties": [
-			{
-				"name": "gr.dockerregistry.repo_url",
-				"value": "docker.calculi.io",
-				"type": "string"
-			}
-		],
+		"default_properties": [],
 		"deployment_files": [],
 		"application_init": {},
 		"process": {
 			"init": {}
-		},
-		"releases": []
+		}
 	},
 	"organization": {
 		"orgname": "Tutorial"
